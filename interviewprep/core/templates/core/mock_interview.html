@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Mock Interview</title>
+</head>
+<body>
+    <h1>Mock Interview</h1>
+
+    {% if question %}
+        <h3>Question {{ current_index }} of {{ total_questions }}</h3>
+        <p>{{ question }}</p>
+
+        <form method="POST">
+            {% csrf_token %}
+            <!-- Text Answer Option -->
+            <textarea id="answer" name="answer" rows="5" cols="50" placeholder="Type your answer here..." required></textarea><br><br>
+
+            <!-- Voice Recording Option -->
+            <button type="button" id="start-recording">🎤 Start Recording</button>
+            <button type="button" id="stop-recording" disabled>🛑 Stop Recording</button>
+            <input type="hidden" name="question" value="{{ question }}">
+
+            <p id="recording-status"></p>
+
+            <br><br>
+            <button type="submit">Submit Answer</button>
+        </form>
+    {% else %}
+        <p>No questions available. Please go back and generate questions.</p>
+    {% endif %}
+
+    <br>
+    <a href="{% url 'dashboard' %}">Exit to Dashboard</a>
+
+    <!-- Speech-to-Text Script -->
+    <script>
+        let recognition;
+        let isRecording = false;
+
+        if ('webkitSpeechRecognition' in window) {
+            recognition = new webkitSpeechRecognition();
+            recognition.continuous = false;
+            recognition.lang = 'en-US';
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+
+            recognition.onresult = function(event) {
+                const transcript = event.results[0][0].transcript;
+                document.getElementById('answer').value = transcript;
+            };
+
+            recognition.onstart = function() {
+                document.getElementById('recording-status').innerText = "Recording... Speak now.";
+            };
+
+            recognition.onend = function() {
+                document.getElementById('recording-status').innerText = "Recording stopped.";
+            };
+
+            document.getElementById('start-recording').onclick = function() {
+                if (!isRecording) {
+                    recognition.start();
+                    isRecording = true;
+                    document.getElementById('start-recording').disabled = true;
+                    document.getElementById('stop-recording').disabled = false;
+                }
+            };
+
+            document.getElementById('stop-recording').onclick = function() {
+                if (isRecording) {
+                    recognition.stop();
+                    isRecording = false;
+                    document.getElementById('start-recording').disabled = false;
+                    document.getElementById('stop-recording').disabled = true;
+                }
+            };
+        } else {
+            alert("Sorry, your browser does not support Speech Recognition. Please use Chrome browser.");
+        }
+    </script>
+</body>
+</html>

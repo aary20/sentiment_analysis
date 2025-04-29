@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Weekly Report</title>
+</head>
+<body>
+    <h2>Hello {{ user.first_name }}!</h2>
+
+    <p>Here is your interview performance summary:</p>
+
+    <table border="1">
+        <tr>
+            <th>Date</th>
+            <th>Score</th>
+        </tr>
+        {% for answer in user_answers %}
+        <tr>
+            <td>{{ answer.timestamp.date }}</td>
+            <td>{{ answer.final_score }}/100</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <p>Keep practicing and improving! 🚀</p>
+
+    <p>Best,<br>InterviewPrep AI Team</p>
+</body>
+</html>

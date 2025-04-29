@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Detailed Report</title>
+</head>
+<body>
+    <h2>Interview Answer Report</h2>
+    <p><strong>Question:</strong> {{ answer.question }}</p>
+    <p><strong>Your Answer:</strong> {{ answer.answer }}</p>
+    <p><strong>Date:</strong> {{ answer.timestamp }}</p>
+
+    <h3>Scores</h3>
+    <p>Grammar Score: {{ answer.grammar_score }}</p>
+    <p>Keyword Score: {{ answer.keyword_score }}</p>
+    <p><strong>Final Score:</strong> {{ answer.final_score }}/100</p>
+
+    <br>
+    <a href="{% url 'dashboard' %}">← Back to Dashboard</a>
+</body>
+</html>
