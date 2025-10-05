@@ -1,0 +1,11 @@
+Django>=4.2
+pandas
+scikit-learn
+matplotlib
+wordcloud
+plotly
+nltk
+transformers
+torch
+gunicorn
+whitenoise

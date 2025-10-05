@@ -1,0 +1,101 @@
+{% extends 'sentiment_app/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-10 mx-auto text-center">
+        <h1 class="display-4 mb-4">Amazon Reviews Sentiment Analysis</h1>
+        <p class="lead mb-5">Analyze Amazon product reviews sentiment and visualize insights with our powerful tools</p>
+    </div>
+</div>
+
+<div class="row mb-5">
+    <div class="col-md-4">
+        <div class="stat-card text-center">
+            <i class="fas fa-database stat-icon"></i>
+            <div class="stat-value">{{ total_reviews }}</div>
+            <div class="stat-label">Total Reviews</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card text-center">
+            <i class="fas fa-smile stat-icon text-success"></i>
+            <div class="stat-value">{{ positive_reviews }}</div>
+            <div class="stat-label">Positive Reviews</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card text-center">
+            <i class="fas fa-frown stat-icon text-danger"></i>
+            <div class="stat-value">{{ negative_reviews }}</div>
+            <div class="stat-label">Negative Reviews</div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-brain fa-4x amazon-primary mb-3"></i>
+                <h3 class="card-title">Sentiment Prediction</h3>
+                <p class="card-text">Analyze Amazon review sentiment using machine learning models including Naive Bayes, Logistic Regression, and SVM.</p>
+                <a href="{% url 'sentiment_app:predict' %}" class="btn btn-primary">
+                    <i class="fas fa-magic me-2"></i>Try Prediction
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-chart-pie fa-4x amazon-primary mb-3"></i>
+                <h3 class="card-title">Data Visualization</h3>
+                <p class="card-text">Explore Amazon reviews insights through word clouds and label analysis visualizations.</p>
+                <a href="{% url 'sentiment_app:visualize' %}" class="btn btn-primary">
+                    <i class="fas fa-eye me-2"></i>View Visualizations
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-5">
+    <div class="col-lg-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="mb-0">Recent Amazon Reviews</h3>
+            </div>
+            <div class="card-body">
+                {% if recent_reviews %}
+                    {% for review in recent_reviews %}
+                        <div class="review-card {% if review.sentiment == 1 %}positive-review{% else %}negative-review{% endif %}">
+                            <div class="review-text">{{ review.text }}</div>
+                            <div class="d-flex justify-content-between">
+                                <div class="review-rating">
+                                    {% for i in "12345" %}
+                                        {% if forloop.counter <= review.rating %}
+                                            <i class="fas fa-star"></i>
+                                        {% else %}
+                                            <i class="far fa-star"></i>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                                <div class="review-sentiment">
+                                    {% if review.sentiment == 1 %}
+                                        <span class="badge bg-success">Positive</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Negative</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-center">No reviews available</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

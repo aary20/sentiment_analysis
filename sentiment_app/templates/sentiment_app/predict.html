@@ -1,0 +1,117 @@
+{% extends 'sentiment_app/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h2 class="mb-0"><i class="fas fa-brain me-2"></i>Sentiment Prediction</h2>
+            </div>
+            <div class="card-body">
+                <form id="prediction-form" method="post" action="{% url 'sentiment_app:predict' %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="text" class="form-label">Enter text for sentiment analysis:</label>
+                        <textarea class="form-control" id="text" name="text" rows="5" required>{{ text }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="model" class="form-label">Select model:</label>
+                        <select class="form-select" id="model" name="model">
+                            <option value="naive_bayes" {% if model == 'naive_bayes' %}selected{% endif %}>Naive Bayes</option>
+                            <option value="logistic_regression" {% if model == 'logistic_regression' %}selected{% endif %}>Logistic Regression</option>
+                            <option value="svm" {% if model == 'svm' %}selected{% endif %}>Support Vector Machine</option>
+                        </select>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" id="predict-btn" class="btn btn-primary">
+                            <i class="fas fa-magic me-2"></i>Predict Sentiment
+                        </button>
+                    </div>
+                </form>
+
+                {% if sentiment %}
+                <div class="result-box mt-4">
+                    <h3 class="mb-3">Prediction Results</h3>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <h4 class="card-title">Sentiment</h4>
+                                    <div class="display-4 mb-3">
+                                        {% if sentiment == 'positive' %}
+                                        <i class="fas fa-smile text-success"></i>
+                                        {% else %}
+                                        <i class="fas fa-frown text-danger"></i>
+                                        {% endif %}
+                                    </div>
+                                    <p class="card-text fs-5">
+                                        {% if sentiment == 'positive' %}
+                                        <span class="badge bg-success">Positive</span>
+                                        {% else %}
+                                        <span class="badge bg-danger">Negative</span>
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h4 class="card-title text-center">Model Metrics</h4>
+                                    <ul class="list-group list-group-flush">
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            Model
+                                            <span class="badge bg-primary rounded-pill">{{ model_name }}</span>
+                                        </li>
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            Accuracy
+                                            <span class="badge bg-info rounded-pill">{{ accuracy }}%</span>
+                                        </li>
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            Confidence
+                                            <span class="badge bg-warning text-dark rounded-pill">{{ confidence }}%</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if error %}
+                <div class="error-box mt-4">
+                    <h3 class="text-danger"><i class="fas fa-exclamation-triangle me-2"></i>Error</h3>
+                    <p>{{ error }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const textArea = document.getElementById('text');
+        const charCount = document.createElement('div');
+        charCount.className = 'text-muted small mt-1';
+        textArea.parentNode.insertBefore(charCount, textArea.nextSibling);
+        
+        function updateCharCount() {
+            const count = textArea.value.length;
+            charCount.textContent = `${count} characters`;
+            if (count > 500) {
+                charCount.classList.add('text-danger');
+            } else {
+                charCount.classList.remove('text-danger');
+            }
+        }
+        
+        textArea.addEventListener('input', updateCharCount);
+        updateCharCount(); // Initial count
+    });
+</script>
+{% endblock %}
