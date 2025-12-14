@@ -16,15 +16,15 @@ from sklearn.svm import LinearSVC
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
 from sklearn.feature_extraction.text import CountVectorizer
-
-
+import os
 from transformers import pipeline
-
 from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer
 from nltk.stem import WordNetLemmatizer
 from nltk.corpus import wordnet
 from nltk import word_tokenize
+from sklearn.feature_extraction.text import TfidfVectorizer  # ADD THIS
+from sklearn.naive_bayes import MultinomialNB                # AND THIS
 
 nltk.download('averaged_perceptron_tagger')
 nltk.download('punkt')
@@ -45,16 +45,61 @@ models = ("BernoulliNB",
 
 def load_dataset():
     """
-    Loads the Amazon reviews dataset from a CSV file and returns it as a Pandas DataFrame.
+    Loads a dataset from CSV and returns it as a Pandas DataFrame.
+    Supports:
+    - custom_text.csv/custom_texts.csv with columns like text,label
+    - amazon_reviews.csv (legacy: verified_reviews,feedback)
     """
-    try:
-        # Try to load from the root directory where the file is located
-        path = "amazon_reviews.csv"
-        return pd.read_csv(path)
-    except FileNotFoundError:
-        # Fallback to the data directory if not found
-        path = "data/amazon_reviews.csv"
-        return pd.read_csv(path)
+    # Prefer custom dataset
+    custom_paths = [
+        "custom_text.csv",
+        "custom_texts.csv",
+        os.path.join("data", "custom_text.csv"),
+        os.path.join("data", "custom_texts.csv"),
+    ]
+    df = None
+    for p in custom_paths:
+        if os.path.exists(p):
+            df = pd.read_csv(p)
+            break
+    if df is None:
+        # Fallback to legacy Amazon dataset
+        legacy_paths = [
+            "amazon_reviews.csv",
+            os.path.join("data", "amazon_reviews.csv"),
+        ]
+        for p in legacy_paths:
+            if os.path.exists(p):
+                df = pd.read_csv(p)
+                break
+    if df is None:
+        raise FileNotFoundError("No dataset found. Place custom_text.csv or amazon_reviews.csv.")
+
+    # Normalize to text + label columns
+    text_col = "text" if "text" in df.columns else ("verified_reviews" if "verified_reviews" in df.columns else None)
+    label_col = "label" if "label" in df.columns else ("feedback" if "feedback" in df.columns else None)
+    if text_col is None or label_col is None:
+        raise ValueError("Dataset must have text and label columns (e.g., text,label or verified_reviews,feedback).")
+
+    df = df[[text_col, label_col]].rename(columns={text_col: "text", label_col: "label"})
+    df["text"].replace("", np.nan, inplace=True)
+    df.dropna(subset=["text", "label"], inplace=True)
+
+    # Map labels to 0/1 for consistency
+    def map_label(v):
+        if isinstance(v, str):
+            l = v.strip().lower()
+            if l in ["positive", "pos", "1", "true", "yes"]:
+                return 1
+            if l in ["negative", "neg", "0", "false", "no"]:
+                return 0
+            try:
+                return 1 if int(l) == 1 else 0
+            except Exception:
+                return 1 if "pos" in l or "good" in l or "like" in l else 0
+        return int(v)
+    df["label"] = df["label"].apply(map_label).astype(int)
+    return df
 
 
 def get_wordnet_pos(treebank_tag):
@@ -117,20 +162,27 @@ def preprocessing(message):
 
 def feature_engineering(data_df):
     """
-    Preprocesses the text data and performs feature engineering by oversampling, 
-    splitting the data into train and test sets, and vectorizing the text data using 
-    CountVectorizer.
+    Preprocesses the text data and performs feature engineering by oversampling,
+    splitting the data into train and test sets, and vectorizing the text data using
+    TF-IDF with n-grams.
     """
-    X = data_df['verified_reviews']
-    y = data_df['feedback']
+    X = data_df["text"]
+    y = data_df["label"]
     over_sampler = RandomOverSampler(random_state=42)
     x_res, y_res = over_sampler.fit_resample(X.values.reshape(-1, 1), y)
     x_res = np.ravel(x_res)
     x_res = pd.Series(x_res)
-    x_train, x_test, y_train, y_test = train_test_split(x_res, y_res,
-                                                        stratify=y_res, 
-                                                        test_size=0.25, random_state=245)
-    vectorizer = CountVectorizer(tokenizer=LemmaTokenizer(), lowercase=False)
+    x_train, x_test, y_train, y_test = train_test_split(
+        x_res, y_res, stratify=y_res, test_size=0.25, random_state=245
+    )
+    vectorizer = TfidfVectorizer(
+        tokenizer=LemmaTokenizer(),
+        lowercase=True,
+        stop_words='english',
+        ngram_range=(1, 2),
+        min_df=2,
+        sublinear_tf=True
+    )
     x_train = vectorizer.fit_transform(x_train)
     x_test = vectorizer.transform(x_test)
     return x_train, x_test, y_train, y_test
@@ -164,23 +216,27 @@ def confusion_matrix_func(model_name, _X_train, _X_test, _y_train, _y_test):
 @st.cache_data
 def reset_feature():
     """
-    Reset the feature vectors by reading the data from the Amazon reviews dataset and applying pre-processing steps including oversampling, lemmatization and stop word removal. 
-    The resulting feature vectors are then returned along with the trained CountVectorizer object.
+    Rebuild features from the current dataset using preprocessing,
+    oversampling, lemmatization, stop word removal, and TF-IDF vectorization.
     """
-    path = "data/amazon_reviews.csv"
-    df = pd.read_csv(path)
-    df['verified_reviews'].replace(' ', np.nan, inplace=True)
-    df.dropna(subset=['verified_reviews'], inplace=True)
-    X = df['verified_reviews']
-    y = df['feedback']
+    df = load_dataset()
+    X = df["text"]
+    y = df["label"]
     over_sampler = RandomOverSampler(random_state=42)
     x_res, y_res = over_sampler.fit_resample(X.values.reshape(-1, 1), y)
     x_res = np.ravel(x_res)
     x_res = pd.Series(x_res)
-    x_train, x_test, y_train, y_test = train_test_split(x_res, y_res,
-                                                        stratify=y_res, 
-                                                        test_size=0.25, random_state=245)
-    vectorizer = CountVectorizer(tokenizer=LemmaTokenizer(), lowercase=False)
+    x_train, x_test, y_train, y_test = train_test_split(
+        x_res, y_res, stratify=y_res, test_size=0.25, random_state=245
+    )
+    vectorizer = TfidfVectorizer(
+        tokenizer=LemmaTokenizer(),
+        lowercase=True,
+        stop_words='english',
+        ngram_range=(1, 2),
+        min_df=2,
+        sublinear_tf=True
+    )
     x_train = vectorizer.fit_transform(x_train)
     x_test = vectorizer.transform(x_test)
     return x_train, x_test, y_train, y_test, vectorizer
@@ -220,62 +276,60 @@ def predict_pipeline(model, x_train, x_test, y_train, y_test):
 
 def predict_model(model_name, user_input, x_train, x_test, y_train, y_test, vectorizer, alpha=None, C=None, max_feat=None, n_estim=None, n_jobs=None, max_iterations=None, max_lr=None):
         """
-        This function takes in the hyperparamters of the model and fits the input model_name on the x_train and y_train data and uses the vectorizer to transform
-        the user_input to a format that can be used by the model for prediction. The output includes a list of user_text
-        with sentiment and classification report and evaluation metrics (train_auc and test_auc) of the model.
+        Train the selected model and predict for user_input.
+        Returns:
+        - data: list of (text, pred_int, pred_label_str, confidence_float)
+        - result: classification report dict
+        - train_auc, test_auc: AUCs if available else None
         """
-        if model_name == BernoulliNB:
-            model = model_name(alpha=alpha)
-            model.fit(x_train, y_train)
-            result, train_auc, test_auc = model_evaluate(model, x_train, x_test, y_train, y_test)
-            test = pd.Series(user_input)
-            pred_test = vectorizer.transform(test)
-            predictions = model.predict(pred_test)
-            pred_to_label = {0: 'Negative', 1: 'Positive'}
-
-            # Make a list of user_text with sentiment.
-            data = []
-            for t, pred in zip(user_input, predictions):
-                data.append((t, pred, pred_to_label[pred]))
-        
+        # Initialize model with stronger defaults
+        if model_name == MultinomialNB:
+            model = model_name(alpha=alpha or 1.0)
         elif model_name == LogisticRegression:
-            model = model_name(C=C, max_iter=max_lr, n_jobs=n_jobs)
-            model.fit(x_train, y_train)
-            result, train_auc, test_auc = model_evaluate(model, x_train, x_test, y_train, y_test)
-            test = pd.Series(user_input)
-            pred_test = vectorizer.transform(test)
-            predictions = model.predict(pred_test)
-            pred_to_label = {0: 'Negative', 1: 'Positive'}
-
-            # Make a list of user_text with sentiment.
-            data = []
-            for t, pred in zip(user_input, predictions):
-                data.append((t, pred, pred_to_label[pred]))
+            model = model_name(
+                C=C or 1.0,
+                max_iter=max_lr or 1000,
+                n_jobs=n_jobs,
+                class_weight='balanced',
+                solver='saga'
+            )
         elif model_name == LinearSVC:
-            model = model_name(C=C, max_iter=max_iterations)
-            model.fit(x_train, y_train)
-            result, train_auc, test_auc = model_evaluate(model, x_train, x_test, y_train, y_test)
-            test = pd.Series(user_input)
-            pred_test = vectorizer.transform(test)
-            predictions = model.predict(pred_test)
-            pred_to_label = {0: 'Negative', 1: 'Positive'}
-
-            # Make a list of user_text with sentiment.
-            data = []
-            for t, pred in zip(user_input, predictions):
-                data.append((t, pred, pred_to_label[pred]))
+            model = model_name(
+                C=C or 1.0,
+                max_iter=max_iterations or 2000
+            )
         else:
-            model = model_name(n_estimators=n_estim, max_features=max_feat)
-            model.fit(x_train, y_train)
-            result, train_auc, test_auc = model_evaluate(model, x_train, x_test, y_train, y_test)
-            test = pd.Series(user_input)
-            pred_test = vectorizer.transform(test)
-            predictions = model.predict(pred_test)
-            pred_to_label = {0: 'Negative', 1: 'Positive'}
+            model = model_name(n_estimators=n_estim or 100, max_features=max_feat or None)
 
-            # Make a list of user_text with sentiment.
-            data = []
-            for t, pred in zip(user_input, predictions):
-                data.append((t, pred, pred_to_label[pred]))
+        # Train
+        model.fit(x_train, y_train)
+
+        # Evaluate
+        result, train_auc, test_auc = model_evaluate(model, x_train, x_test, y_train, y_test)
+
+        # Predict for user inputs
+        test = pd.Series(user_input)
+        pred_test = vectorizer.transform(test)
+        predictions = model.predict(pred_test)
+        pred_to_label = {0: 'Negative', 1: 'Positive'}
+
+        # Confidence calculation
+        confidences = []
+        if hasattr(model, "predict_proba"):
+            proba = model.predict_proba(pred_test)
+            # Confidence is max class probability
+            confidences = (np.max(proba, axis=1) * 100.0).tolist()
+        elif hasattr(model, "decision_function"):
+            df_vals = model.decision_function(pred_test)
+            # Map distance to [50, 99] monotonically
+            conf = 50.0 + 50.0 * (np.abs(df_vals) / (np.abs(df_vals) + 1.0))
+            confidences = conf.tolist()
+        else:
+            confidences = [75.0] * len(predictions)
+
+        # Make a list of user_text with sentiment and confidence
+        data = []
+        for t, pred, conf in zip(user_input, predictions, confidences):
+            data.append((t, pred, pred_to_label[pred], float(np.round(conf, 2))))
 
         return data, result, train_auc, test_auc

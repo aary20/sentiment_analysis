@@ -5,8 +5,8 @@
 {% block content %}
 <div class="row">
     <div class="col-lg-10 mx-auto text-center">
-        <h1 class="display-4 mb-4">Amazon Reviews Sentiment Analysis</h1>
-        <p class="lead mb-5">Analyze Amazon product reviews sentiment and visualize insights with our powerful tools</p>
+        <h1 class="display-4 mb-4">Sentiment Analysis</h1>
+        <p class="lead mb-5">Analyze sentiments and visualize insights with our powerful tools</p>
     </div>
 </div>
 
@@ -40,7 +40,7 @@
             <div class="card-body text-center">
                 <i class="fas fa-brain fa-4x amazon-primary mb-3"></i>
                 <h3 class="card-title">Sentiment Prediction</h3>
-                <p class="card-text">Analyze Amazon review sentiment using machine learning models including Naive Bayes, Logistic Regression, and SVM.</p>
+                <p class="card-text">Analyze sentiments using machine learning models including Naive Bayes, Logistic Regression, and SVM.</p>
                 <a href="{% url 'sentiment_app:predict' %}" class="btn btn-primary">
                     <i class="fas fa-magic me-2"></i>Try Prediction
                 </a>
@@ -52,7 +52,7 @@
             <div class="card-body text-center">
                 <i class="fas fa-chart-pie fa-4x amazon-primary mb-3"></i>
                 <h3 class="card-title">Data Visualization</h3>
-                <p class="card-text">Explore Amazon reviews insights through word clouds and label analysis visualizations.</p>
+                <p class="card-text">Explore insights through word clouds and label analysis visualizations.</p>
                 <a href="{% url 'sentiment_app:visualize' %}" class="btn btn-primary">
                     <i class="fas fa-eye me-2"></i>View Visualizations
                 </a>
@@ -65,7 +65,7 @@
     <div class="col-lg-12">
         <div class="card">
             <div class="card-header">
-                <h3 class="mb-0">Recent Amazon Reviews</h3>
+                <h3 class="mb-0">Recents</h3>
             </div>
             <div class="card-body">
                 {% if recent_reviews %}

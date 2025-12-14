@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Amazon Reviews Sentiment Analysis</title>
+    <title>Sentiment Analysis Dashboard</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Custom CSS -->
@@ -57,8 +57,9 @@
 
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
         <div class="container">
-            <a class="navbar-brand" href="{% url 'sentiment_app:index' %}">
-                <i class="fab fa-amazon me-2"></i>Amazon Reviews Sentiment Analysis
+            <a class="navbar-brand d-flex align-items-center gap-2" href="{% url 'sentiment_app:index' %}">
+                <img src="{% static 'img/user.jpg' %}" alt="Your Photo" width="32" height="32" class="rounded-circle" onerror="this.style.display='none'">
+                Sentiment Analysis
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -93,8 +94,8 @@
         <div class="container">
             <div class="row">
                 <div class="col-md-6">
-                    <h5><i class="fab fa-amazon me-2"></i>Amazon Reviews Sentiment Analysis</h5>
-                    <p>Analyze Amazon product reviews sentiment using machine learning models.</p>
+                    <h5><i class="fab fa-amazon me-2"></i>Sentiment Analysis Dashboard</h5>
+                    <p>Analyze sentiments using machine learning models.</p>
                 </div>
                 <div class="col-md-3">
                     <h5>Features</h5>
@@ -117,7 +118,7 @@
             
             <!-- Update the copyright year in the footer section -->
             <div class="text-center">
-                <p class="mb-0">© 2025 Amazon Reviews Sentiment Analysis</p>
+                <p class="mb-0">© 2025 Sentiment Analysis</p>
             </div>
         </div>
     </footer>
