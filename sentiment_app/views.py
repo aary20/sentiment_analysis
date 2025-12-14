@@ -206,7 +206,7 @@ def predict(request):
 
             # Map selection to actual model classes
             model_map = {
-                'naive_bayes': backend.MultinomialNB,      # Ensure Naive Bayes -> MultinomialNB
+                'naive_bayes': backend.MultinomialNB,
                 'logistic_regression': backend.LogisticRegression,
                 'svm': backend.LinearSVC
             }
