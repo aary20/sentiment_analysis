@@ -178,6 +178,7 @@ parso==0.8.3
 pathspec==0.12.1
 pdfminer.six==20250416
 pillow==10.2.0
+pip>=23.0
 platformdirs==3.11.0
 plotly==6.3.1
 preshed==3.0.9
@@ -299,4 +300,5 @@ whitenoise==6.11.0
 widgetsnbextension==4.0.14
 wordcloud==1.9.4
 wrapt==1.15.0
+
 
